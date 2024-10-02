@@ -5,14 +5,17 @@
       <div class="mb-3">
         <label for="courseName" class="form-label">Tên khóa học</label>
         <input type="text" class="form-control" id="courseName" v-model="course.name" />
+        <span v-if="course.errors.name" class="text-danger">{{ course.errors.name }}</span>
       </div>
       <div class="mb-3">
         <label for="courseDescription" class="form-label">Mô tả khóa học</label>
         <input type="text" class="form-control" id="courseDescription" v-model="course.description" />
+        <span v-if="course.errors.description" class="text-danger">{{ course.errors.description }}</span>
       </div>
       <div class="mb-3">
         <label for="coursePrice" class="form-label">Giá</label>
         <input type="number" class="form-control" id="coursePrice" v-model="course.price" />
+        <span v-if="course.errors.price" class="text-danger">{{ course.errors.price }}</span>
       </div>
       <div class="mb-3">
         <label for="courseUnit" class="form-label">Đơn vị</label>
@@ -24,33 +27,19 @@
       <div class="mb-3">
         <label for="courseImageUrl" class="form-label">Đường dẫn ảnh khóa học</label>
         <input type="url" class="form-control" id="courseImageUrl" v-model="course.thumbnailUrl" />
+        <span v-if="course.errors.thumbnailUrl" class="text-danger">{{ course.errors.thumbnailUrl }}</span>
       </div>
       <div class="mb-3">
         <label for="courseTechStacks" class="form-label">Công nghệ</label>
-        <Multiselect
-        v-model="course.techStack"
-        :options="techStack.data"
-        label="name"
-        :multiple="true"
-        :taggable="true"
-        @tag="addTag"
-        @remove="removeTag"
-        placeholder="Chọn công nghệ"
-        />
+        <Multiselect v-model="course.techStack" :options="techStack.data" label="name" :multiple="true" :taggable="true"
+          @tag="addTag" @remove="removeTag" placeholder="Chọn công nghệ" />
+        <span v-if="course.errors.techStack" class="text-danger">{{ course.errors.techStack }}</span>
       </div>
       <div class="mb-3">
         <label for="supporter" class="form-label">Giảng viên</label>
-        <Multiselect
-          v-model="course.teacher"
-          :options="teachers.data"
-          label="name"
-            track-by="id"
-          :multiple="true"
-          :taggable="true"
-          @tag="addTeacher"
-          @remove="removeTeacher"
-          placeholder="Chọn người hỗ trợ"
-        />
+        <Multiselect v-model="course.teacher" :options="teachers.data" label="name" track-by="id" :multiple="true"
+          :taggable="true" @tag="addTeacher" @remove="removeTeacher" placeholder="Chọn người hỗ trợ" />
+        <span v-if="course.errors.teacher" class="text-danger">{{ course.errors.teacher }}</span>
       </div>
       <div class="d-flex justify-content-between mb-3">
         <div class="me-2 flex-grow-1">
@@ -69,7 +58,7 @@
         </div>
         <div class="ms-2 flex-grow-1">
           <label for="coursePublicity" class="form-label">Lượt hỗ trợ</label>
-          <input type="number" class="form-control" v-model="course.point"/>
+          <input type="number" class="form-control" v-model="course.point" />
         </div>
       </div>
       <div class="d-flex justify-content-center mb-4">
@@ -110,17 +99,25 @@ export default {
       isActive: true,
       isPublic: true,
       point: 30,
+      errors: {
+        name: '',
+        description: '',
+        price: '',
+        thumbnailUrl: '',
+        techStack: '',
+        teacher: ''
+      }
     });
 
     const techStack = reactive({
       data: []
     });
     const teachers = reactive({
-      data: []  
+      data: []
     });
     const submitCourse = async () => {
       try {
-        const courseData = { ...course, techStack: course.techStack.map(tech => tech.id)};
+        const courseData = { ...course, techStack: course.techStack.map(tech => tech.id) };
         if (isUpdate.value) {
           await axios.put(`${rootAPI}/courses/${course.id}`, courseData);
           toast.success("Cập nhật khóa học thành công!", {
@@ -133,6 +130,17 @@ export default {
           });
         }
       } catch (error) {
+        if (error.response && error.response.data) {
+          const validationErrors = error.response.data;
+          course.errors = {
+            name: validationErrors.name || '',
+            description: validationErrors.description || '',
+            price: validationErrors.price || '',
+            thumbnailUrl: validationErrors.thumbnailUrl || '',
+            techStack: validationErrors.techStack || '',
+            teacher: validationErrors.teacher || ''
+          };
+        }
         toast.error(isUpdate.value ? "Cập nhật khóa học thất bại!" : "Tạo khóa học mới thất bại!", {
           autoClose: 1000,
         });
@@ -145,22 +153,22 @@ export default {
     };
 
     const addTag = (newTag) => {
-      course.techStack.push({ name: newTag }); 
+      course.techStack.push({ name: newTag });
     };
     const addTeacher = (newTeacher) => {
       course.teacher.push({ name: newTeacher });
     };
 
     const removeTag = (tagToRemove) => {
-    const techStackSet = new Set(course.techStack.map(tag => tag.name));
-    techStackSet.delete(tagToRemove.name);
-    course.techStack = Array.from(techStackSet).map(name => ({ name }));
+      const techStackSet = new Set(course.techStack.map(tag => tag.name));
+      techStackSet.delete(tagToRemove.name);
+      course.techStack = Array.from(techStackSet).map(name => ({ name }));
     };
 
     const removeTeacher = (tToRemove) => {
-    const teacherSet = new Set(course.teacher);
-    teacherSet.delete(tToRemove.name);
-    course.teacher = Array.from(teacherSet);
+      const teacherSet = new Set(course.teacher);
+      teacherSet.delete(tToRemove.name);
+      course.teacher = Array.from(teacherSet);
     };
 
     const fetchCourse = async (id) => {
@@ -168,27 +176,27 @@ export default {
         const response = await axios.get(`${rootAPI}/courses/${id}`);
         Object.assign(course, response.data.data);
         console.log(response.data.data);
-        
+
       } catch (error) {
         console.error('Error fetching course:', error);
       }
     };
 
     const fetchTechStack = async () => {
-        const response = await axios.get(`${rootAPI}/tech-stacks`);
-        techStack.data = response.data.data.items; 
-      };
+      const response = await axios.get(`${rootAPI}/tech-stacks`);
+      techStack.data = response.data.data.items;
+    };
 
-      const fetchTeachers = async () => {
-        const response = await axios.get(`${rootAPI}/teachers`);
-        teachers.data = response.data.data.items.map(teacher => ({
-          id: teacher.id,
-          name: teacher.name,       
-          avatar: teacher.avatar,
-          color:  teacher.color
-        }));
-        
-      }
+    const fetchTeachers = async () => {
+      const response = await axios.get(`${rootAPI}/teachers`);
+      teachers.data = response.data.data.items.map(teacher => ({
+        id: teacher.id,
+        name: teacher.name,
+        avatar: teacher.avatar,
+        color: teacher.color
+      }));
+
+    }
 
     onMounted(async () => {
       const { id } = route.params;
@@ -212,7 +220,7 @@ export default {
       addTag,
       removeTag,
       addTeacher,
-      removeTeacher    
+      removeTeacher
     };
   }
 };

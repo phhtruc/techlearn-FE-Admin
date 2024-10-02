@@ -1,6 +1,7 @@
 <template>
     <div class="d-flex mt-3 justify-content-between align-items-center">
-        <router-link :to="{ path: '/lessons', query: { idChapter: idChapter, idCourse:idCourse } }" class="text-decoration-none">
+        <router-link :to="{ path: '/lessons', query: { idChapter: idChapter, idCourse: idCourse } }"
+            class="text-decoration-none">
             <div class="d-flex align-items-center gap-2">
                 <i class="fa-solid fa-arrow-left text-dark"></i>
                 <p class="mb-0 text-dark">Danh sách bài học</p>
@@ -15,6 +16,7 @@
                     <div class="col-md-12">
                         <label for="title" class="form-label">Tiêu đề</label>
                         <input type="text" class="form-control" id="title" v-model="dataLesson.title" />
+                        <div v-if="errors.title" class="text-danger">{{ errors.title }}</div>
                     </div>
                 </div>
                 <div class="row mb-3">
@@ -31,18 +33,21 @@
                     <div class="col-md-12">
                         <label for="video" class="form-label">Video URL</label>
                         <input type="text" class="form-control" id="video" v-model="dataLesson.videoUrl" />
+                        <div v-if="errors.videoUrl" class="text-danger">{{ errors.videoUrl }}</div>
                     </div>
                 </div>
                 <div class="row mb-3">
                     <div class="col-md-12">
                         <label for="content" class="form-label">Nội dung</label>
                         <CKEditorComponent v-model="dataLesson.content" />
+                        <div v-if="errors.content" class="text-danger">{{ errors.content }}</div>
                     </div>
                 </div>
                 <div class="row mb-3" v-if="dataLesson.type === 'EXERCISES'">
                     <div class="col-md-12">
                         <label for="contentRefer" class="form-label">Ghi chú</label>
                         <CKEditorComponent v-model="dataLesson.contentRefer" />
+                        <div v-if="errors.contentRefer" class="text-danger">{{ errors.contentRefer }}</div>
                     </div>
                 </div>
             </div>
@@ -78,6 +83,14 @@ const dataLesson = reactive({
     chapterId: idChapter
 })
 
+const errors = reactive({
+    title: "",
+    type: "",
+    videoUrl: "",
+    content: "",
+    contentRefer: ""
+});
+
 const submitLessons = async () => {
     if (isUpdate.value) {
         try {
@@ -102,11 +115,19 @@ const submitLessons = async () => {
             autoClose: 3000,
         });
     } catch (error) {
-        toast.error("Thêm bài tập thất bại", {
-            position: "top-right",
-            autoClose: 3000,
-        });
-        console.error('Thêm bài tập thất bại:', error);
+        if (error.response && error.response.data) {
+            const validationErrors = error.response.data; // Lấy lỗi từ phản hồi API
+            errors.title = validationErrors.title || ''; // Gán thông báo lỗi vào đối tượng errors
+            errors.videoUrl = validationErrors.videoUrl || '';
+            errors.content = validationErrors.content || '';
+            errors.contentRefer = validationErrors.contentRefer || '';
+        } else {
+            toast.error("Có lỗi xảy ra, vui lòng thử lại sau", {
+                position: "top-right",
+                autoClose: 3000,
+            });
+            console.error('Lỗi:', error);
+        }
     }
 }
 

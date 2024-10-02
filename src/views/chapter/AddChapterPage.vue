@@ -8,7 +8,7 @@
     </router-link>
   </div>
   <hr class="border border-grey border-1 opacity-50" />
-  <div class="row mt-5">
+  <div class="row mt-4">
     <div class="col-5">
       <div class="col-md-12">
         <img class="img-fluid" :src="dataCourse.course.thumbnailUrl" alt="" />
@@ -24,7 +24,7 @@
         </p>
         <p>
           <span class="fw-bold">Giá khoá học:</span>
-          {{ dataCourse.course.price }}
+          {{ formatCurrency(dataCourse.course.price,dataCourse.course.currencyUnit) }}
         </p>
         <p>
           <span class="fw-bold">Đơn vị:</span>
@@ -51,26 +51,14 @@
 
                 <div class="mb-3">
                     <label for="isPublic" class="form-label">Trạng thái</label>
-                    <select v-model="isPublic" class="form-select" aria-label="Công khai">
-                        <option v-for="option in publicOptions" :key="option.value" :value="option.value">
-                            {{ option.text }}
-                        </option>
-                    </select>
+                   <br>
+                    <div v-for="option in publicOptions" :key="option.value" class="form-check form-check-inline">
+                      <input class="form-check-input" :checked="option.value" type="radio" name="publicOptions"  value="{{ option.value }}">
+                      <label class="form-check-label" for="inlineRadio1">  {{ option.text }}</label>
+                    </div>
+
                 </div>
-                <div class="mb-3">
-                    <label for="supporter" class="form-label">Người hỗ trợ</label>
-                    <Multiselect
-                    v-model="mentors.data"
-                    :options="options.data || []"
-                    label="name"
-                    :multiple="true"
-                    :taggable="true"
-                    @tag="addTeacher"
-                    @remove="removeTeacher"
-                    :close-on-select="false"
-                    placeholder="Chọn người hỗ trợ"
-                    />
-                </div>
+                
         <button type="submit" class="btn btn-primary">Thêm Chương</button>
       </form>
     </div>
@@ -84,17 +72,25 @@ import { ref, onMounted, reactive } from "vue";
 import { useRoute } from "vue-router";
 import Multiselect from "vue-multiselect";
 
+
 const rootAPI = process.env.VUE_APP_ROOT_API;
+
 
 const chapterName = ref("");
 const isPublic = ref(true);
+const isInputFocused = ref(false);
+
+const errors = reactive({
+  chapterName: "",
+  teacher: ""
+});
 
 const mentors = reactive({
-  data: [],
-});
+  data: []
+})
 const options = reactive({
-  data: [],
-});
+  data: []
+})
 
 const publicOptions = [
   { value: true, text: "Công khai" },
@@ -105,6 +101,30 @@ const route = useRoute();
 const idCourse = route.query.idCourse;
 const existingChapters = ref([]);
 
+ function formatCurrency(value, unit) {
+    if (typeof value !== "number") {
+        return value;
+    }
+    var formatter 
+    switch (unit) {
+      case "USD":
+       formatter  = new Intl.NumberFormat('en-US', {
+        style: 'currency',
+        currency: 'USD'
+    });
+        break;
+      case "VND":
+      formatter  = new Intl.NumberFormat('vi-VN', {
+        style: 'currency',
+        currency: 'VND'
+    });
+        
+        break;
+    }
+   
+    return formatter.format(value);
+};
+
 const addChapter = async () => {
   try {
     const newChapter = {
@@ -113,21 +133,25 @@ const addChapter = async () => {
       courseId: idCourse,
       mentor: mentors.data,
     };
-    const response = await axios.post(
-      `${process.env.VUE_APP_ROOT_API}/chapters`,
-      newChapter
-    );
+
+    await axios.post(`${process.env.VUE_APP_ROOT_API}/chapters`, newChapter);
 
     toast.success("Thêm chương thành công", {
       position: "top-right",
       autoClose: 3000,
     });
+
   } catch (error) {
+    if (error.response && error.response.data) {
+      const validationErrors = error.response.data;
+      errors.chapterName = validationErrors.name || '';
+      errors.teacher = validationErrors.teacher || '';
+    }
     toast.error("Thêm chương thất bại", {
       position: "top-right",
       autoClose: 3000,
     });
-    console.error("Thêm chương thất bại:", error);
+    console.error('Thêm chương thất bại:', errors);
   }
 };
 
@@ -140,7 +164,7 @@ const fetchChapters = async () => {
     const response = await axios.get(
       `${rootAPI}/chapters?idCourse=${idCourse}`
     );
-    existingChapters.value = response.data.data.items; // Store existing chapters
+    existingChapters.value = response.data.data.items;
   } catch (error) {
     console.error(error);
   }
@@ -150,12 +174,10 @@ const fetchCourse = async () => {
   try {
     const response = await axios.get(`${rootAPI}/courses/${idCourse}`);
     dataCourse.course = response.data.data;
-    // dataCourse.course = {...dataCourse.course, mentor:[]}
-    console.log("dataCourse", dataCourse.course);
   } catch (error) {
     console.error(error);
   }
-};
+}
 
 const fetchMentors = async () => {
   try {
@@ -164,7 +186,7 @@ const fetchMentors = async () => {
   } catch (err) {
     console.log(err);
   }
-};
+}
 
 const removeTeacher = (tagToRemove) => {
   const teacherSet = new Set(mentors.data);
@@ -177,15 +199,12 @@ onMounted(async () => {
   await fetchChapters();
   await fetchCourse();
 });
+
 </script>
 
 <style scoped>
 .container {
   max-width: 600px;
-}
-
-h2 {
-  margin-bottom: 20px;
 }
 
 .form-label {
@@ -204,6 +223,10 @@ img {
   border-radius: 10px;
   max-width: 80%;
   height: auto;
+}
+
+input:focus {
+  border-color: initial !important;
 }
 
 .chapter-header {

@@ -8,7 +8,7 @@
         </router-link>
     </div>
     <hr class="border border-grey border-1 opacity-50">
-    <div class="row mt-5">
+    <div class="row mt-4">
         <div class="col-5">
             <div class="col-md-12">
                 <img class="img-fluid" :src="dataCourse.course.thumbnailUrl" alt="">
@@ -21,7 +21,7 @@
                     <span class="fw-bold">Mô tả khoá học:</span> {{ dataCourse.course.description }}
                 </p>
                 <p>
-                    <span class="fw-bold">Giá khoá học:</span> {{ dataCourse.course.price }}
+                    <span class="fw-bold">Giá khoá học:</span> {{ formatCurrency(dataCourse.course.price,dataCourse.course.currencyUnit) }}
                 </p>
                 <p>
                     <span class="fw-bold">Đơn vị:</span> {{ dataCourse.course.currencyUnit }}
@@ -50,28 +50,18 @@
                     <label for="chapterName" class="form-label">Tên chương</label>
                     <input type="text" id="chapterName" class="form-control" v-model="chapterName" required />
                 </div>
+                  
                 <div class="mb-3">
                     <label for="isPublic" class="form-label">Trạng thái</label>
-                    <select id="isPublic" class="form-select" v-model="isPublic" required>
-                        <option v-for="option in publicOptions" :key="option.value" :value="option.value">
-                            {{ option.text }}
-                        </option>
-                    </select>
+                   <br>
+                    <div v-for="option in publicOptions" :key="option.value" class="form-check form-check-inline">
+                      <input class="form-check-input" v-model="isPublic" :checked="option.value==isPublic"  type="radio" name="isPublic"  :value=" option.value">
+                      <label class="form-check-label"  for="inlineRadio1">  {{ option.text }}</label>
+                    </div>
+
                 </div>
-                <div class="mb-3">
-                    <label for="supporter" class="form-label">Người hỗ trợ</label>
-                    <Multiselect
-                    v-model="mentors.data"
-                    :options="options.data || []"
-                    label="name"
-                    track-by="id"
-                    :multiple="true"
-                    @tag="addTeacher"
-                    @remove="removeTeacher"
-                    :close-on-select="false"
-                    placeholder="Chọn người hỗ trợ"
-                    />
-                </div>
+
+
                 <button type="submit" class="btn btn-primary">Cập nhật</button>
             </form>
         </div>
@@ -105,6 +95,31 @@ const publicOptions = [
     { value: false, text: 'Riêng tư' },
 ];
 
+
+function formatCurrency(value, unit) {
+    if (typeof value !== "number") {
+        return value;
+    }
+    var formatter 
+    switch (unit) {
+      case "USD":
+       formatter  = new Intl.NumberFormat('en-US', {
+        style: 'currency',
+        currency: 'USD'
+    });
+        break;
+      case "VND":
+      formatter  = new Intl.NumberFormat('vi-VN', {
+        style: 'currency',
+        currency: 'VND'
+    });
+        
+        break;
+    }
+   
+    return formatter.format(value);
+};
+
 const fetchChapter = async () => {
     try {
         const response = await axios.get(`${rootAPI}/chapters/${chapterId}`);
@@ -118,6 +133,7 @@ const fetchChapter = async () => {
 };
 
 const updateChapter = async () => {
+   
     try {
         const updatedChapter = {
             name: chapterName.value,

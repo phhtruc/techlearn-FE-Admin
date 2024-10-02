@@ -7,17 +7,10 @@
       </div>
     </router-link>
     <div>
-      <router-link
-        :to="{ path: '/add-chapter', query: { idCourse: idCourse } }"
-        type="button"
-        class="btn btn-primary mr-3"
-        >Thêm chương</router-link
-      >
-      <router-link
-        :to="{ path: '/sort-chapter', query: { idCourse: idCourse } }"
-        class="btn btn-primary"
-        >Sắp xếp chương</router-link
-      >
+      <router-link :to="{ path: '/add-chapter', query: { idCourse: idCourse } }" type="button"
+        class="btn btn-primary mr-3">Thêm chương</router-link>
+      <router-link :to="{ path: '/sort-chapter', query: { idCourse: idCourse } }" class="btn btn-primary">Sắp xếp
+        chương</router-link>
     </div>
   </div>
   <hr class="border border-grey border-1 opacity-50" />
@@ -45,13 +38,11 @@
         </p>
         <p>
           <span class="fw-bold">Công nghệ: </span>
-          <span
-            v-if="
-              dataCourse.course &&
-              dataCourse.course.techStack &&
-              dataCourse.course.techStack.length > 0
-            "
-          >
+          <span v-if="
+            dataCourse.course &&
+            dataCourse.course.techStack &&
+            dataCourse.course.techStack.length > 0
+          ">
             {{
               dataCourse.course.techStack.map((stack) => stack.name).join(", ")
             }}
@@ -65,24 +56,10 @@
   <h5 class="mt-4" style="margin-left: 30px; margin-bottom: -20px">
     Danh sách chương
   </h5>
-  <Table
-    :header="header"
-    :data="data.chapter"
-    :keys="keys"
-    :actions="actions"
-    :totalRows="totalRows"
-    :perPage="perPage"
-    @delete-item="deleteChapter"
-    @pageChange="handlePageChange"
-  ></Table>
-  <b-modal
-    v-model="isModalVisible"
-    title="Xác nhận xóa"
-    ok-title="Xóa"
-    cancel-title="Đóng"
-    ok-variant="danger"
-    @ok="handleDelete"
-  >
+  <Table :header="header" :data="data.chapter" :keys="keys" :actions="actions" :totalRows="totalRows" :perPage="perPage"
+    @delete-item="deleteChapter" @pageChange="handlePageChange"></Table>
+  <b-modal v-model="isModalVisible" title="Xác nhận xóa" ok-title="Xóa" cancel-title="Đóng" ok-variant="danger"
+    @ok="handleDelete">
     <p>Bạn có chắc chắn muốn xóa chương không?</p>
   </b-modal>
 </template>
@@ -138,9 +115,8 @@ const fetchChapter = async () => {
     data.chapter = response.data.data.items;
 
     console.log(response.data.data);
-
     perPage.value = response.data.data.pageSize;
-    totalRows.value = response.data.data.totalPage;
+    totalRows.value = response.data.data.totalPage > 0 ? response.data.data.totalPage : 1;
   } catch (error) {
     console.error(error);
   }
